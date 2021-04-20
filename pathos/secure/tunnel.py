@@ -52,7 +52,7 @@ class Tunnel(object):
     MAXPORT = 65535
     verbose = True
 
-    def connect(self, host, port=None, through=None):
+    def connect(self, host, port=None, keyfile=None, through=None):
         '''establish a secure shell tunnel between local and remote host
 
 Input:
@@ -60,6 +60,7 @@ Input:
     port     -- remote port number
 
 Additional Input:
+    keyfile  -- filepath to private key authentication file  [default = None]
     through  -- 'tunnel-through' hostname  [default = None]
         '''
         from pathos.portpicker import portnumber
@@ -75,7 +76,7 @@ Additional Input:
             #print('Trying port %d...' % localport)
             
             try:
-                self._connect(localport, host, port, through=through)
+                self._connect(localport, host, port, keyfile=keyfile, through=through)
                 #print('SSH tunnel %d:%s:%d' % (localport, host, port))
             except TunnelException as e: # breaks 2.5 compatibility
                 if e.args[0] == 'bind':
@@ -130,8 +131,11 @@ Inputs:
         except: msg = self._launcher.message
         return "Tunnel('%s')" % msg
 
-    def _connect(self, localport, remotehost, remoteport, through=None):
-        options = '-q -N -L %d:%s:%d' % (localport, remotehost, remoteport)
+    def _connect(self, localport, remotehost, remoteport, keyfile=None, through=None):
+        if keyfile is None:
+            options = '-q -N -L %d:%s:%d' % (localport, remotehost, remoteport)
+        else:
+            options = '-q -N -L %d:%s:%d -i %s' % (localport, remotehost, remoteport, keyfile)
         command = ''
         if through: rhost = through
         else: rhost = remotehost
